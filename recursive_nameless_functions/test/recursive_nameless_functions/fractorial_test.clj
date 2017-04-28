@@ -16,4 +16,10 @@
     (is (= ((fractorial-weird fractorial-weird) 5) fractorial-result-2)))
   (testing "Tests fractorial-no-names"
     (is (= (fractorial-no-names 10) fractorial-result-1))
-    (is (= (fractorial-no-names 5) fractorial-result-2))))
+    (is (= (fractorial-no-names 5) fractorial-result-2)))
+  (testing "Test equality of all functions"
+    (is (= (fractorial 10) 
+           ((fractorial-gen fractorial) 10) 
+           ((fractorial-weird fractorial-weird) 10)
+           (fractorial-no-names 10)
+           fractorial-result-1))))
