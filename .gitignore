@@ -1,3 +1,9 @@
+*~
+bin
+releases
+*.jar
+
+### Clojure ###
 pom.xml
 pom.xml.asc
 *jar
@@ -10,3 +16,8 @@ pom.xml.asc
 .lein-plugins/
 .lein-failures
 .nrepl-port
+
+### OSX ###
+.DS_Store
+.AppleDouble
+.LSOverride
