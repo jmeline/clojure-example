@@ -112,6 +112,19 @@
         [6 7 8]
         (map #(+ % 5) '(1 2 3)))))
 
+;; #18
+(deftest sequences-filter
+ (is (=
+        [6 7]
+        (filter #(> % 5) '(3 4 5 6 7)))))
+
+;; #35
+(deftest local-bindings
+ (is (=
+      (= (let [x 5] (+ 2 x)) 7)
+      (= (let [x 3 y 10] (- y x)) 7)
+      (= (let [x 21] (let [y 3] (/ x y))) 7))))
+
 ;; #72
 (deftest rearranging-code->>
   (is (= (reduce + (map inc (take 3 (drop 2 [2 5 4 1 3 6]))))
