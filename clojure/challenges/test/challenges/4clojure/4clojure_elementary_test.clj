@@ -122,12 +122,40 @@
 (deftest regular-expressions
   (is (= "ABC" (apply str (re-seq #"[A-Z]+" "bA1B3Ce ")))))
 
+;; #57
+(deftest simple-recursion
+  (is
+    (= ((fn foo [x]
+          (when (> x 0)
+            (conj (foo (dec x)) x)))
+        5)
+       [5 4 3 2 1])))
+
 ;; #64
 (deftest intro-to-reduce
   (are [x y] (= x y)
        15 (reduce + [1 2 3 4 5])
        0  (reduce + [])
        6  (reduce + 1 [2 3])))
+
+;; #68
+(deftest recurring-theme
+  (is (=
+        (loop [x 5 result []]
+          (if (> x 0)
+            (recur (dec x) (conj result (+ 2 x)))
+            result))
+        [7 6 5 4 3])))
+
+;; #71
+(deftest rearranging-code->
+  (are [x] (= x 5)
+       (last (sort (rest (reverse [2 5 4 1 3 6]))))
+       (-> [2 5 4 1 3 6]
+           (reverse)
+           (rest)
+           (sort)
+           (last))))
 
 ;; #72
 (deftest rearranging-code->>
