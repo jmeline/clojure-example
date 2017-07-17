@@ -167,3 +167,40 @@
          (take 3)
          (map inc)
          (reduce +))))
+
+;; #134
+;; return true iff contains key and value is nil
+(deftest a-nil-key
+  (let [f #(not (%2 %1 true))]
+    (are [r x] (r (f x {:a nil :b 2}))
+         true? :a
+         false? :b
+         false? :c)))
+
+;; #145
+(deftest for-the-win
+  (are [x] (= x '(1 5 9 13 17 21 25 29 33 37))
+       (for [x (range 40) :when (= 1 (rem x 4))] x)
+       (for [x (iterate #(+ 4 %) 0)
+             :let [z (inc x)]
+             :while (< z 40)] z)
+       (for [[x y] (partition 2 (range 20))] (+ x y))))
+
+;; #161
+(deftest subset-and-superset
+  (are [x] (= true x)
+       (clojure.set/subset? #{1} #{1 2})
+       (clojure.set/subset? #{1 2} #{1 2})
+       (clojure.set/superset? #{1 2} #{2})
+       (clojure.set/superset? #{1 2} #{1 2})))
+
+;; #162
+(deftest logical-falsity-and-truth
+  (are [x] (= x 1)
+       (if-not false 1 0)
+       (if-not nil 1 0)
+       (if true 1 0)
+       (if [] 1 0)
+       (if [0] 1 0)
+       (if 0 1 0)
+       (if 1 1 0)))
