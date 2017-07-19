@@ -186,6 +186,14 @@
              :while (< z 40)] z)
        (for [[x y] (partition 2 (range 20))] (+ x y))))
 
+;; 156
+(deftest map-defaults
+  (let [f (fn [x y] (into {} (for [value y] [value x])))]
+    (are [x y] (= x y)
+         (f 0 [:a :b :c]) {:a 0 :b 0 :c 0}
+         (f "x" [1 2 3]) {1 "x" 2 "x" 3 "x"}
+         (f [:a :b] [:foo :bar]) {:foo [:a :b] :bar [:a :b]})))
+
 ;; #161
 (deftest subset-and-superset
   (are [x] (= true x)
