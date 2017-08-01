@@ -122,6 +122,10 @@
 (deftest regular-expressions
   (is (= "ABC" (apply str (re-seq #"[A-Z]+" "bA1B3Ce ")))))
 
+;; #52
+(deftest intro-to-destructuring
+  (is (= [2 4] (let [[a b c d e] [0 1 2 3 4]] [c e]))))
+
 ;; #57
 (deftest simple-recursion
   (is
