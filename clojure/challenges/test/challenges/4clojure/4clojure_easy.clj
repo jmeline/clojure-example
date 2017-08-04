@@ -46,3 +46,27 @@
       (= (f '(1 10 3)) 14)))
   (is (= (test-cases solution1)
          (test-cases solution2))))
+
+;; #25
+(deftest find-the-odd-numbers
+  (are [x y] (= (filter odd? x) y)
+       #{1 2 3 4 5} '(1 3 5)
+       [4 2 1 6] '(1)
+       [2 2 4 6] '()
+       [1 1 1 3] '(1 1 1 3)))
+
+;; #27
+(deftest palindrome-detector
+  (defn my-solution [lst]
+    (if (not (seq lst))
+      true
+      (if (not= (first lst) (last lst))
+        false
+        (recur (drop 1 (drop-last lst))))))
+  (defn simple-solution [lst] (= (reverse lst) (seq lst)))
+  (are [f y] (every? f (map #(% y) [my-solution simple-solution]))
+       false? '(1 2 3 4 5)
+       true? "racecar"
+       true? [:foo :bar :foo]
+       true? '(1 1 3 3 1 1)
+       false? '(:a :b :c)))
