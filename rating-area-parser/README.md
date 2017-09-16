@@ -1,6 +1,7 @@
 # rating-area-parser
 
-FIXME: description
+Creates an xml spread sheet containing all the rating areas for
+  all states
 
 ## Installation
 
