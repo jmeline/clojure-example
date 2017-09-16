@@ -15,13 +15,17 @@
 
 (defn get-dom [state]
   (html/html-snippet
-   (:body @ (http/get (get-abbr-url state)))))
+   (:body @(http/get (get-abbr-url state)))))
 
 (defn get-rows [dom]
   (html/select dom [:div.list-bullet :tr :td :p]))
 
+(defn get-main-content [state]
+  (get-rows (get-dom state)))
+
 (defn -main
   "My attempt at writing a rating-area parser in clojure"
   [& args]
-  ;; (doseq [state (last states)] (println (get-rows (get-dom state))))
-  (println (get-rows (get-dom (last states)))))
+  (let [rows (drop 3 (get-main-content (last states)))]
+    (partition 3 (map #(apply str (:content %)) rows))))
+
