@@ -57,3 +57,12 @@
 ;;     ;...
 ;;     )
 ;;   )
+
+(defn fib [remaining]
+  (loop [a 0
+         b 1
+         result []
+         x remaining]
+    (if (zero? x)
+      result
+      (recur b (+ a b) (conj result a) (dec x)))))
