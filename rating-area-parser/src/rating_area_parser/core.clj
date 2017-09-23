@@ -20,18 +20,74 @@
 (defn get-table-rows [dom]
   (html/select dom [:div.list-bullet :tr :td :p]))
 
-(defn get-table-rows-from-dom [state]
-  (-> state 
+(defn county-name-format
+  ([first-value second-value result]
+   (conj result first-value second-value " "))
+  ([first-value second-value]
+   (county-name-format first-value second-value [])))
+
+(defn three-digit-zip-format
+  ([first-value second-value result]
+   (conj result first-value " " second-value))
+  ([first-value second-value]
+   (three-digit-zip-format first-value second-value [])))
+
+(defn normalize-data
+  "restructure the data into a better format depending on if it
+   uses the 3 digit zip format or if it uses the county name."
+  [lst result-modification-fn]
+  (loop [values lst result []]
+    (if (empty? values)
+      result
+      (recur (drop 2 values)
+             (result-modification-fn (first values) (second values) result)))))
+
+(defn get-table-rows-from-dom
+  "Collect html <tr> into a lazy sequence from the DOM"
+  [state]
+  (-> state
       (get-state-specific-dom)
       (get-table-rows)))
 
-(defn partition-rating-areas [state]
+(defn pull-content-from-cms-website-by-state 
+  "Build a crud list of all the rating areas being pulled from the website"
+  [state]
   (->> state
        (get-table-rows-from-dom)
        (drop 3)
-       (map #(apply str (:content %)))
+       (map #(apply str (:content %)))))
+
+(defn sanitize-and-normalize-data 
+  "CMS website uses inconsistent formatting and frankly pulling data from
+   each page can be a headache. Remove the weird characters and "
+  [lst]
+  (->> lst
+       (map #(clojure.string/replace % #" " ""))
+       (filter #(when (not (empty? %)) %))
+       ((fn [lst]
+          (if (number? (read-string (second lst)))
+            (normalize-data lst three-digit-zip-format)
+            (normalize-data lst county-name-format))))))
+
+(defn partition-rating-areas
+  "Obtains data from site and partitions the normalized data
+   into groups of 3"
+  [state]
+  (->> state
+       (pull-content-from-cms-website-by-state)
+       (sanitize-and-normalize-data)
        (partition 3)))
 
-(defn -main [& args]
+(defn build-all-state-maps
+  "Builds a single map of key State and value List of rating areas"
+  []
+  (reduce
+   (fn [new-map state]
+     (assoc new-map (keyword state) (partition-rating-areas state))) {} states))
+
+(defn -main
   "My attempt at writing a rating-area parser in clojure"
-  (partition-rating-areas (last states)))
+  [& args]
+  (build-all-state-maps))
+
+;;(def ft (future (partition-rating-areas (first states))))
