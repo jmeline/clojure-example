@@ -54,7 +54,7 @@
   [state]
   (->> state
        (get-table-rows-from-dom)
-       (drop 3)
+       (drop 3) ;; ignore the table header rows
        (map #(apply str (:content %)))))
 
 (defn sanitize-and-normalize-data 
