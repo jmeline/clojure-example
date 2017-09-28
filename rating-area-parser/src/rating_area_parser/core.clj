@@ -1,6 +1,7 @@
 (ns rating-area-parser.core
   (:require [net.cgrand.enlive-html :as html]
-            [org.httpkit.client :as http])
+            [org.httpkit.client :as http]
+            [clojure.xml :as xml])
   (:gen-class))
 
 (defn get-url [abbr]
@@ -11,7 +12,7 @@
              "MA" "MD" "ME" "MI" "MN" "MO" "MS" "MT" "NC"
              "ND" "NE" "NH" "NJ" "NM" "NV" "NY" "OH" "OK"
              "OR" "PA" "RI" "SC" "SD" "TN" "TX" "UT" "VA"
-             "VT" "WA" "WI" "WV" "WY"])
+             "VT" "WA" "WI" "WV" "WY" "AS" "GU" "MP" "PR"])
 
 (defn get-state-specific-dom [state]
   (html/html-snippet
@@ -50,7 +51,8 @@
       (get-table-rows)))
 
 (defn pull-content-from-cms-website-by-state 
-  "Build a crud list of all the rating areas being pulled from the website"
+  "Build a crud list of all the rating areas for the state being pulled
+   from the website"
   [state]
   (->> state
        (get-table-rows-from-dom)
@@ -59,7 +61,7 @@
 
 (defn sanitize-and-normalize-data 
   "CMS website uses inconsistent formatting and frankly pulling data from
-   each page can be a headache. Remove the weird characters and "
+   each page can be a headache. Remove the weird characters"
   [lst]
   (->> lst
        (map #(clojure.string/replace % #" " ""))
@@ -85,6 +87,42 @@
    (fn [new-map state]
      (assoc new-map (keyword state) (partition-rating-areas state))) {} states))
 
+(defn build-xml-data-tag
+  ([value]
+   (build-xml-data-tag value "String"))
+  ([value type]
+   (-> {:tag :Data :attrs {"ss:Type" type}}
+      (cond-> (not (empty? value))
+        (assoc  :content [value])))))
+
+(defn build-xml-cell
+  [state]
+  (into [] (map #(build-xml-data-tag %) (state r))))
+
+(defn build-xml-worksheet
+  [state]
+  {:tag :Worksheet :attrs {"ss:Name" (name state)}
+   :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (build-xml-cell state)}]}]}]}
+
+;;(defn convert-rating-areas-to-xml [values])
+(defn testheader []
+  (xml/emit-element
+   {:tag :WorkBook :attrs {:xmlns "urn:schemas-microsoft-com:office:spreadsheet" :xmlns:o "urn:schemas-microsoft-com:office:office"
+                           :xmlns:x "urn:schemas-microsoft-com:office:excel"     :xmlns:ss "urn:schemas-microsoft-com:office:spreadsheet"
+                           :xmlns:html "http://www.w3.org/TR/REC-html40"}
+    :content [
+              {:tag :Worksheet :attrs {"ss:Name" "Options"}
+               :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content [
+                                                                                           (build-xml-data-tag "Effective Year")
+                                                                                           (build-xml-data-tag "2014" "Number")
+                                                                                           ]}]}]}]}
+              {:tag :Worksheet :attrs {"ss:Name" "AL"}
+               :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (into []
+                                                                                                 (map #(build-xml-data-tag %)
+                                                                                                      (first (:ID r))))
+                                                                                           }]}]}]}
+              (build-xml-worksheet :ID)
+              ]}))
 (defn -main
   "My attempt at writing a rating-area parser in clojure"
   [& args]

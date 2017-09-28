@@ -13,4 +13,15 @@
 
   (testing "three-digit-zip-format"
     (is (= (three-digit-zip-format "Rating Area 2" "995" []) ["Rating Area 2" " " "995"]))
-    (is (= (three-digit-zip-format "Rating Area 3" "445") ["Rating Area 3" " " "445"]))))
+    (is (= (three-digit-zip-format "Rating Area 3" "445") ["Rating Area 3" " " "445"])))
+
+  (testing "sanitize-and-normalize fn"
+    (is (= ["Rating Area 3" " " "445"]
+           (sanitize-and-normalize-data ["Rating Area 3 " " " "" "445"]))))
+
+  (testing "build-xml-data-tag"
+    (is (= {:tag :Data :attrs {"ss:Type" "String"} :content ["abc"]}
+           (build-xml-data-tag "abc")))
+    (is (= {:tag :Data :attrs {"ss:Type" "Number"} :content ["995"]}
+           (build-xml-data-tag "995" "Number")))))
+
