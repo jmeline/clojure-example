@@ -23,5 +23,5 @@
     (is (= {:tag :Data :attrs {"ss:Type" "String"} :content ["abc"]}
            (build-xml-data-tag "abc")))
     (is (= {:tag :Data :attrs {"ss:Type" "Number"} :content ["995"]}
-           (build-xml-data-tag "995" "Number")))))
+           (build-xml-data-tag "995")))))
 

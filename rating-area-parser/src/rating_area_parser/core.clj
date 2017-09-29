@@ -89,11 +89,11 @@
 
 (defn build-xml-data-tag
   ([value]
-   (build-xml-data-tag value "String"))
-  ([value type]
-   (-> {:tag :Data :attrs {"ss:Type" type}}
-      (cond-> (not (empty? value))
-        (assoc  :content [value])))))
+   (-> {:tag :Data}
+       (assoc :attrs (if (number? (read-string value))
+                       {"ss:Type" "Number"}
+                       {"ss:Type" "String"}))
+       (cond-> (not (empty? value)) (assoc :content [value])))))
 
 (defn build-xml-cell
   [state]
@@ -102,13 +102,14 @@
 (defn build-xml-worksheet
   [state]
   {:tag :Worksheet :attrs {"ss:Name" (name state)}
-   :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (build-xml-cell state)}]}]}]}
+   :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (build-xml-cell state)}]}]}]})
 
-;;(defn convert-rating-areas-to-xml [values])
 (defn testheader []
   (xml/emit-element
-   {:tag :WorkBook :attrs {:xmlns "urn:schemas-microsoft-com:office:spreadsheet" :xmlns:o "urn:schemas-microsoft-com:office:office"
-                           :xmlns:x "urn:schemas-microsoft-com:office:excel"     :xmlns:ss "urn:schemas-microsoft-com:office:spreadsheet"
+   {:tag :WorkBook :attrs {:xmlns "urn:schemas-microsoft-com:office:spreadsheet"
+                           :xmlns:o "urn:schemas-microsoft-com:office:office"
+                           :xmlns:x "urn:schemas-microsoft-com:office:excel"
+                           :xmlns:ss "urn:schemas-microsoft-com:office:spreadsheet"
                            :xmlns:html "http://www.w3.org/TR/REC-html40"}
     :content [
               {:tag :Worksheet :attrs {"ss:Name" "Options"}
