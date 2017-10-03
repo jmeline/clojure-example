@@ -87,46 +87,52 @@
    (fn [new-map state]
      (assoc new-map (keyword state) (partition-rating-areas state))) {} states))
 
+(defn determine-type [value]
+  (cond
+    (clojure.string/blank? value) "String"
+    (number? (read-string value)) "Number"
+    :else "String"))
+
 (defn build-xml-data-tag
-  ([value]
-   (-> {:tag :Data}
-       (assoc :attrs (if (number? (read-string value))
-                       {"ss:Type" "Number"}
-                       {"ss:Type" "String"}))
-       (cond-> (not (empty? value)) (assoc :content [value])))))
+  [value]
+  (-> {:tag :Data :attrs {"ss:Type" (determine-type value)}}
+      (cond-> (not (empty? value)) (assoc :content [value]))
+      (#(identity {:tag :Cell :content [%]}))))
 
 (defn build-xml-cell
-  [state]
-  (into [] (map #(build-xml-data-tag %) (state r))))
+  [collection]
+  (-> (into [] (mapv #(build-xml-data-tag %) collection))
+      (#(identity {:tag :Row :content %}))))
 
 (defn build-xml-worksheet
-  [state]
-  {:tag :Worksheet :attrs {"ss:Name" (name state)}
-   :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (build-xml-cell state)}]}]}]})
+  [values-map]
+  (cons
+   {:tag :Worksheet :attrs {"ss:Name" "Options"}
+    :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content [
+                                                                                 (build-xml-data-tag "Effective Year")
+                                                                                 (build-xml-data-tag "2018")]}]}]}]}
+   []))
 
-(defn testheader []
+(comment
+  (reduce
+   (fn [result [key value]]
+     (conj {:tag :Worksheet :attrs {"ss:Name" (name key)}
+            :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (build-xml-cell value)}]}]}]}
+           result)) [] (sort values-map)))
+(defn testheader
+  [values-map]
   (xml/emit-element
    {:tag :WorkBook :attrs {:xmlns "urn:schemas-microsoft-com:office:spreadsheet"
                            :xmlns:o "urn:schemas-microsoft-com:office:office"
                            :xmlns:x "urn:schemas-microsoft-com:office:excel"
                            :xmlns:ss "urn:schemas-microsoft-com:office:spreadsheet"
                            :xmlns:html "http://www.w3.org/TR/REC-html40"}
-    :content [
-              {:tag :Worksheet :attrs {"ss:Name" "Options"}
-               :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content [
-                                                                                           (build-xml-data-tag "Effective Year")
-                                                                                           (build-xml-data-tag "2014" "Number")
-                                                                                           ]}]}]}]}
-              {:tag :Worksheet :attrs {"ss:Name" "AL"}
-               :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (into []
-                                                                                                 (map #(build-xml-data-tag %)
-                                                                                                      (first (:ID r))))
-                                                                                           }]}]}]}
-              (build-xml-worksheet :ID)
-              ]}))
+    :content (build-xml-worksheet values-map)}))
+
 (defn -main
   "My attempt at writing a rating-area parser in clojure"
   [& args]
-  (build-all-state-maps))
+                                        ;(build-all-state-maps)
+  )
 
 ;;(def ft (future (partition-rating-areas (first states))))

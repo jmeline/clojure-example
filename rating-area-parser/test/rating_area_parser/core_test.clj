@@ -20,8 +20,22 @@
            (sanitize-and-normalize-data ["Rating Area 3 " " " "" "445"]))))
 
   (testing "build-xml-data-tag"
-    (is (= {:tag :Data :attrs {"ss:Type" "String"} :content ["abc"]}
-           (build-xml-data-tag "abc")))
-    (is (= {:tag :Data :attrs {"ss:Type" "Number"} :content ["995"]}
-           (build-xml-data-tag "995")))))
+    (is (= {:tag :Cell :content [{:tag :Data :attrs {"ss:Type" "String"} :content ["Rating Area 1"]}]}
+           (build-xml-data-tag "Rating Area 1")))
+    (is (= {:tag :Cell :content [{:tag :Data :attrs {"ss:Type" "Number"} :content ["995"]}]}
+           (build-xml-data-tag "995"))))
+
+  (testing "build-xml-cell"
+    (let [test-list '("Rating Area 1" "Boundary" " ")]
+      (is (= {:tag :Row :content [{:tag :Cell :content [{:tag :Data :attrs {"ss:Type" "String"} :content ["Rating Area 1"]}]}
+                                   {:tag :Cell :content [{:tag :Data :attrs {"ss:Type" "String"} :content ["Boundary"]}]}
+                                   {:tag :Cell :content [{:tag :Data :attrs {"ss:Type" "String"} :content [" "]}]}]}
+             (build-xml-cell test-list))))))
+
+  
+  (comment
+    testing "build-xml-worksheet"
+    (is (= {:tag :Worksheet :attrs {"ss:Name" "ID"}
+            :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (build-xml-cell state)}]}]}]})))
+
 
