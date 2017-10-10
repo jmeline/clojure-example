@@ -88,46 +88,54 @@
      (assoc new-map (keyword state) (partition-rating-areas state))) {} states))
 
 (defn determine-type [value]
-  (cond
-    (clojure.string/blank? value) "String"
-    (number? (read-string value)) "Number"
-    :else "String"))
+  (if (re-find #"^[0-9]+$" value) "Number" "String"))
 
 (defn build-xml-data-tag
   [value]
-  (-> {:tag :Data :attrs {"ss:Type" (determine-type value)}}
+  (-> ((fnil determine-type " ") value)
+      (#(identity {:tag :Data :attrs {"ss:Type" %}}))
       (cond-> (not (empty? value)) (assoc :content [value]))
       (#(identity {:tag :Cell :content [%]}))))
 
-(defn build-xml-cell
+(defn build-xml-row
   [collection]
-  (-> (into [] (mapv #(build-xml-data-tag %) collection))
+  (-> (into [] (map #(build-xml-data-tag %) collection))
       (#(identity {:tag :Row :content %}))))
 
 (defn build-xml-worksheet
-  [values-map]
-  (cons
-   {:tag :Worksheet :attrs {"ss:Name" "Options"}
-    :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content [
-                                                                                 (build-xml-data-tag "Effective Year")
-                                                                                 (build-xml-data-tag "2018")]}]}]}]}
-   []))
+  [state values]
+  (-> (into [] (map #(build-xml-row %) values))
+      (#(identity {:tag :Worksheet :attrs {"ss:Name" (name state)}
+                   :content [{:tag :Table :content %}]}))))
 
+(defn dump-everything
+  [values-map]
+  (doseq [[state values] values-map]
+    (spit "test3"
+          (with-out-str (xml/emit (build-xml-worksheet state values))))))
+;; ==========================================
 (comment
   (reduce
    (fn [result [key value]]
      (conj {:tag :Worksheet :attrs {"ss:Name" (name key)}
-            :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (build-xml-cell value)}]}]}]}
+            :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (build-row value)}]}]}]}
            result)) [] (sort values-map)))
-(defn testheader
-  [values-map]
-  (xml/emit-element
-   {:tag :WorkBook :attrs {:xmlns "urn:schemas-microsoft-com:office:spreadsheet"
-                           :xmlns:o "urn:schemas-microsoft-com:office:office"
-                           :xmlns:x "urn:schemas-microsoft-com:office:excel"
-                           :xmlns:ss "urn:schemas-microsoft-com:office:spreadsheet"
-                           :xmlns:html "http://www.w3.org/TR/REC-html40"}
-    :content (build-xml-worksheet values-map)}))
+
+;; ==========================================
+
+(defn write-generator [filename]
+  #(spit filename (with-out-str %)))
+
+(defn dump-to-xml
+  [values-map filename]
+  (let [writer (write-generator filename)]
+    (xml/emit-element
+     {:tag :WorkBook :attrs {:xmlns "urn:schemas-microsoft-com:office:spreadsheet"
+                             :xmlns:o "urn:schemas-microsoft-com:office:office"
+                             :xmlns:x "urn:schemas-microsoft-com:office:excel"
+                             :xmlns:ss "urn:schemas-microsoft-com:office:spreadsheet"
+                             :xmlns:html "http://www.w3.org/TR/REC-html40"}
+      :content (build-xml-worksheet values-map)})))
 
 (defn -main
   "My attempt at writing a rating-area parser in clojure"
