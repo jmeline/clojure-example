@@ -1,5 +1,5 @@
 (ns challenges.easy.27-palindrome-detector-test
-  (:require  [clojure.test :as t]))
+  (:require  [clojure.test :refer :all]))
 
 ;; #27
 (deftest palindrome-detector
