@@ -1,7 +1,6 @@
 (ns challenges.easy.22-count-a-sequence-test
   (:require  [clojure.test :refer :all]
              [challenges.easy.22-count-a-sequence :refer :all]))
-
 (deftest count-a-sequence
   (letfn [(test-cases [f]
             (=

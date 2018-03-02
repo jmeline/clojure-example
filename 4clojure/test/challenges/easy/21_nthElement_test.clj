@@ -5,7 +5,6 @@
 (defn validate
   [numbers index expected]
   (apply = (conj (map #(% numbers index) [my-solution other-solution1 other-solution1]) expected)))
-
 (deftest nth-element
   (is (= (validate '(4 5 6 7) 2 6)
          (validate [:a :b :c] 0 :a)
