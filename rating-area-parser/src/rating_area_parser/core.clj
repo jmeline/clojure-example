@@ -4,6 +4,7 @@
             [clojure.xml :as xml])
   (:gen-class))
 
+;; Web Scraping
 (defn get-url [abbr]
   (str "https://www.cms.gov/CCIIO/Programs-and-Initiatives/Health-Insurance-Market-Reforms/" abbr "-gra.html"))
 
@@ -36,12 +37,12 @@
 (defn normalize-data
   "restructure the data into a better format depending on if it
    uses the 3 digit zip format or if it uses the county name."
-  [lst result-modification-fn]
-  (loop [values lst result []]
+  [lst format-fn]
+  (loop [values lst
+         result []]
     (if (empty? values)
       result
-      (recur (drop 2 values)
-             (result-modification-fn (first values) (second values) result)))))
+      (recur (drop 2 values) (format-fn (first values) (second values) result)))))
 
 (defn get-table-rows-from-dom
   "Collect html <tr> into a lazy sequence from the DOM"
@@ -51,7 +52,7 @@
       (get-table-rows)))
 
 (defn pull-content-from-cms-website-by-state 
-  "Build a crud list of all the rating areas for the state being pulled
+  "Build a list of all the rating areas for the state being pulled
    from the website"
   [state]
   (->> state
@@ -67,9 +68,10 @@
        (map #(clojure.string/replace % #" " ""))
        (filter #(when (not (empty? %)) %))
        ((fn [lst]
-          (if (number? (read-string (second lst)))
-            (normalize-data lst three-digit-zip-format)
-            (normalize-data lst county-name-format))))))
+          (let [normalize-fn (partial normalize-data lst)]
+            (if (number? (read-string (second lst)))
+              (normalize-fn three-digit-zip-format)
+              (normalize-fn county-name-format)))))))
 
 (defn partition-rating-areas
   "Obtains data from site and partitions the normalized data
@@ -84,10 +86,16 @@
   "Builds a single map of key State and value List of rating areas"
   []
   (reduce
-   (fn [new-map state]
-     (assoc new-map (keyword state) (partition-rating-areas state))) {} states))
+   (fn [list-of-maps state]
+     (println "state: " state)
+     (conj list-of-maps
+           (assoc {}
+                  :state state
+                  :rating-areas (partition-rating-areas state)))) [] states))
 
+;; XML Generation
 (defn determine-type [value]
+  (println "'" value "', " (type value))
   (cond
     (clojure.string/blank? value) "String"
     (number? (read-string value)) "Number"
@@ -104,35 +112,45 @@
   (-> (into [] (mapv #(build-xml-data-tag %) collection))
       (#(identity {:tag :Row :content %}))))
 
-(defn build-xml-worksheet
-  [values-map]
-  (cons
-   {:tag :Worksheet :attrs {"ss:Name" "Options"}
-    :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content [
-                                                                                 (build-xml-data-tag "Effective Year")
-                                                                                 (build-xml-data-tag "2018")]}]}]}]}
-   []))
+(defn build-xml-collection
+  [collection]
+  (map #(build-xml-cell %) collection))
 
-(comment
-  (reduce
-   (fn [result [key value]]
-     (conj {:tag :Worksheet :attrs {"ss:Name" (name key)}
-            :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content (build-xml-cell value)}]}]}]}
-           result)) [] (sort values-map)))
-(defn testheader
-  [values-map]
-  (xml/emit-element
-   {:tag :WorkBook :attrs {:xmlns "urn:schemas-microsoft-com:office:spreadsheet"
-                           :xmlns:o "urn:schemas-microsoft-com:office:office"
-                           :xmlns:x "urn:schemas-microsoft-com:office:excel"
-                           :xmlns:ss "urn:schemas-microsoft-com:office:spreadsheet"
-                           :xmlns:html "http://www.w3.org/TR/REC-html40"}
-    :content (build-xml-worksheet values-map)}))
+(defn build-worksheet
+  [name content]
+  {:tag :Worksheet :attrs {"ss:Name" name}
+   :content [{:tag :Table :content [{:tag :Row :content [{:tag :Cell :content content}]}]}]} )
+
+(defn build-xml-header
+  [worksheets]
+  {:tag :WorkBook :attrs {:xmlns "urn:schemas-microsoft-com:office:spreadsheet"
+                          :xmlns:o "urn:schemas-microsoft-com:office:office"
+                          :xmlns:x "urn:schemas-microsoft-com:office:excel"
+                          :xmlns:ss "urn:schemas-microsoft-com:office:spreadsheet"
+                          :xmlns:html "http://www.w3.org/TR/REC-html40"}
+   :content worksheets})
+
+(defn build-xml-worksheet
+  [values-list options]
+  (build-xml-header
+   (conj (build-worksheet "Options" (map #(build-xml-data-tag %) ["Effective Year" (:year options)]))
+         (reduce
+          (fn [result map]
+            (println (:state map) " = " (:rating-areas map))
+            (conj build-worksheet
+                  (name (:state map))
+                  (build-xml-collection (:rating-areas map))) result) [] values-list))))
+
+(defn write-to-file
+  [data]
+  (with-open [out-file (clojure.java.io/writer "RatingAreas.xml" :encoding "UTF-8")]
+    (xml/emit data out-file)))
 
 (defn -main
   "My attempt at writing a rating-area parser in clojure"
   [& args]
-                                        ;(build-all-state-maps)
-  )
+  (let [currentYear "2018"]
+    (write-to-file
+     (build-xml-worksheet (build-all-state-maps) {:year currentYear}))))
 
 ;;(def ft (future (partition-rating-areas (first states))))

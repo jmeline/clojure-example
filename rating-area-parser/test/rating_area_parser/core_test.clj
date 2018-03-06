@@ -32,7 +32,6 @@
                                    {:tag :Cell :content [{:tag :Data :attrs {"ss:Type" "String"} :content [" "]}]}]}
              (build-xml-cell test-list))))))
 
-  
   (comment
     testing "build-xml-worksheet"
     (is (= {:tag :Worksheet :attrs {"ss:Name" "ID"}
