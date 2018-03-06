@@ -26,7 +26,10 @@
   ;; You can re-set the symbols in the binding vector multiple times
   ;; (building it up into the value you need), if you find it useful:
 
-  (let [x 2 x (* x x) x (inc x)] (println "local names: " x))) ;; => 5
+  (let [x 2
+        x (* x x)
+        x (inc x)]
+    (println "local names: " x))) ;; => 5
 
 
 (defn data-structures
