@@ -20,3 +20,30 @@
     (twoArgs 9) {:x 2 :y 5 :z 9}
     (oneArg 2 3) {:x 5 :y 2 :z 3}
     (threeArgs) {:x 2 :y 5 :z 3}))
+
+(defn dyingMessage [message]
+  (clojure.string/join
+   (map-indexed
+    (fn [idx val]
+      (if (= (mod idx 2) 0)
+        (clojure.string/upper-case val)
+        (clojure.string/lower-case val))) message)))
+
+(defn lousy-logger
+  [log-level message]
+  (condp = log-level
+    :warn (clojure.string/lower-case message)
+    :emergency (clojure.string/upper-case message)
+    :dying (dyingMessage message)))
+
+(deftest partial-logger-warn
+  (def warn (p/my-partial lousy-logger :warn))
+  (is (= (warn "Red light ahead") "red light ahead")))
+
+(deftest partial-logger-emergency
+  (def emergency (p/my-partial lousy-logger :emergency))
+  (is (= (emergency "Red light ahead") "RED LIGHT AHEAD")))
+
+(deftest partial-logger-dying
+  (def emergency (p/my-partial lousy-logger :dying))
+  (is (= (emergency "Red light ahead") "ReD LiGhT AhEaD")))
